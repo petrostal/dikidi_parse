@@ -73,6 +73,7 @@ if __name__ == '__main__':
     # ids = collect_ids()
     # with open('ids.txt', 'w') as f:
     #     f.write('\n'.join(ids))
-    with open('ids.txt', 'r') as f:
-        ids = f.read().split('\n')
-    collect_phones(ids)
+    # with open('ids.txt', 'r') as f:
+    #     ids = f.read().split('\n')
+    # collect_phones(ids)
+    collect_phones(range(2050, 2099))
