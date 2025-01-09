@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import base64
+import os
 import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Process
@@ -142,8 +143,6 @@ class DikidiParser:
         process_count: int = 10,
         process_size: int = 10000,
     ) -> None:
-        process_count = 50
-        process_size = 10000
         processes = []
         for i in range(process_count):
             start = number_from + i * process_size
@@ -168,11 +167,26 @@ class DikidiParser:
     ) -> None:
         asyncio.run(self.asyn_get_phones(range(from_number, to_number)))
 
+    def merge_results(
+        self,
+        base_filename: str = 'contacts',
+        remove_files: bool = False
+    ) -> None:
+        files_list = os.listdir()
+        with open(f'{base_filename}.txt', 'w') as f:
+            for file in files_list:
+                if file.startswith(base_filename) and file.endswith('.txt'):
+                    with open(file, 'r') as file:
+                        f.write(file.read())
+                    if remove_files:
+                        os.remove(file)
+
 
 if __name__ == '__main__':
     parser = DikidiParser()
     parser.collect_with_multiprocessing(
-        number_from=1100000,
+        number_from=100000,
         process_count=50,
         process_size=10000,
     )
+    parser.merge_results()
