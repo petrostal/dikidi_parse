@@ -8,6 +8,13 @@ from multiprocessing import Process
 
 
 class DikidiParser:
+    """
+    Parser for dikidi.ru
+    Class can parse and coolect data such as company name and phone numbers
+    from dikidi.ru. You can use multiprocessing or asyncio/ aiohttp. 
+    The last one is work too bad because it obtain ban from CloudFlare.
+    By default data stores in file contacs.txt
+    """
     LIMIT = 100
     BASE_URL = (
         f'https://dikidi.ru/ru/ajax/catalog/filter/?limit={LIMIT}&offset='
@@ -15,10 +22,11 @@ class DikidiParser:
     SUFFIX_URL = '&more=1&category=&query=&sort=0&address=&show=0'
     COMPANY_URL = 'https://dikidi.ru/ru/profile/'
 
-    def __init__(self) -> None:
-        pass
-
-    def _collect_ids_by_offset(self, offset: int = LIMIT) -> list:
+    def _collect_ids_by_offset(self, offset: int = LIMIT) -> list[str]:
+        """
+        Parse one catalog page with pagination data offset and limit.
+        Collect company ids from this page.
+        """
         url = f'{self.BASE_URL}{offset}'
         try:
             response = requests.get(url)
@@ -43,7 +51,10 @@ class DikidiParser:
             return
         return result
 
-    def collect_ids(self) -> list:
+    def collect_ids(self) -> list[str]:
+        """
+        Collect company ids from catalog.
+        """
         result = []
         offset = 0
         while ids := self._collect_ids_by_offset(offset):
@@ -52,6 +63,9 @@ class DikidiParser:
         return result
 
     def get_phone_by_company_id(self, id: str) -> str:
+        """
+        Collect company name and phone number by company id.
+        """
         url = f'{self.COMPANY_URL}{id}'
         try:
             response = requests.get(url)
@@ -71,6 +85,12 @@ class DikidiParser:
     def collect_phones(
         self, company_ids: list = [], filename: str = 'contacts.txt'
     ) -> list:
+        """
+        Collect company name and phone number by each company id
+        in list. List can be obtained by collect_ids method.
+        Also list can be just range of numbers.
+        Data stores in file contacts.txt by default.
+        """
         with open(filename, 'w') as f:
             for id in company_ids:
                 try:
@@ -81,6 +101,10 @@ class DikidiParser:
                     pass
 
     async def asyn_get_phones(self, company_ids: list = []):
+        """
+        Async method for collect_phones. Not work properly
+        because of CloudFlare ban.
+        """
         async with aiohttp.ClientSession() as session:
             tasks = []
             for id in company_ids:
@@ -143,6 +167,13 @@ class DikidiParser:
         process_count: int = 10,
         process_size: int = 10000,
     ) -> None:
+        """
+        Method for collect_phones by multiprocessing. It create
+        process_count number of processes. Each process collect
+        data from process_size range of numbers. Data will be scanned
+        from range(number_from, number_from + process_count * process_size).
+        Each process write data to file with name contacts_{start}_{end}.txt.
+        """
         processes = []
         for i in range(process_count):
             start = number_from + i * process_size
@@ -165,6 +196,9 @@ class DikidiParser:
         from_number: int = 1,
         to_number: int = 100000
     ) -> None:
+        """
+        Simple asyncio request for collect_phones with range.
+        """
         asyncio.run(self.asyn_get_phones(range(from_number, to_number)))
 
     def merge_results(
@@ -172,6 +206,9 @@ class DikidiParser:
         base_filename: str = 'contacts',
         remove_files: bool = False
     ) -> None:
+        """
+        Merge all files with contacts data into 1 file contacts.txt.
+        """
         files_list = os.listdir()
         with open(f'{base_filename}.txt', 'w') as f:
             for file in files_list:
